@@ -1,19 +1,22 @@
-#include <algorithm>
-#include <iterator>
 #include <print>
-#include <ranges>
-#include <sstream>
 #include <string>
 #include <utility>
 #include <utils.hpp>
 #include <bits/stdc++.h>
 #include <vector>
 
+
+/*
+ *  Classic backtracking, maintain a temp list of current solution then for every
+ *  cell check if we can insert a queen, if so we recurse into 2 paths of either 
+ *  adding or not. once we reach the last cell or len of temp == n we evaluate 
+ *  if its a solution or not.
+ *
+ */
 class Solution {
 public:
-
-
   auto backtrack(vector<vector<pair<ll,ll>>>& res, ll n, vector<pair<ll,ll>>& temp, ll i, ll j) -> void {
+    // Check
     auto check = [&n](vector<pair<ll,ll>>const& temp, ll i, ll j) -> bool {
       ll ri{i}, rj{j}, li{i}, lj{j};  
       for(;ri<n && rj<n; ri++, rj++);
@@ -35,31 +38,33 @@ public:
       }
       return true;
     }; 
+
+    auto next = [&n](ll i, ll j)-> pair<ll, ll> {
+      if (j<n-1){
+        return make_pair(i, j+1);
+      }else{
+        return make_pair(i+1, 0);
+      }
+    };
     
     if (temp.size() == n){
-      auto copy = vector<pair<ll,ll>>();
-      for (auto [p, q]: temp){
-        copy.push_back(make_pair(p, q));
-      }
-        res.push_back(copy);
+      auto copy = vector<pair<ll,ll>>(temp);
+      res.push_back(copy);
       return;
     }else if(i==n) return;
 
-      ll next_i{i}, next_j{j};
-      if (j<n-1){
-        next_j ++;
-      }else if (i<n){
-        next_i++;
-        next_j = 0;
-      }
-
-    if (check(temp, i, j)){
-      temp.push_back(make_pair(i, j));
-      backtrack(res, n, temp, next_i, next_j);
-      temp.pop_back();
-    }
-    backtrack(res, n, temp, next_i, next_j);
+    while (i<n){
+      auto next_move = next(i,j);
+      if (check(temp, i, j)){
+        temp.push_back(make_pair(i, j));
+        backtrack(res, n, temp, next_move.first, next_move.second);
+        temp.pop_back();
+      }   
+      i = next_move.first;
+      j = next_move.second;
+    } 
   };
+
 
 
   vector<vector<string>> solveNQueens(int n) {
@@ -82,7 +87,6 @@ public:
     
     return result;
   }
-
 };
 
 int main(){
