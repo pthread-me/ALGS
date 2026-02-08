@@ -9,6 +9,39 @@
 #include <vector>
 
 
+/**
+ *  I am replicating BWT traversals here.
+ *  Maintain a vector C of all the elements, r is the length of a 
+ *  permutation run ex for n = 3:
+ *    123
+ *    132
+ *    213
+ *    231
+ *    312
+ *    312
+ *  Here r is 2 since for n = 2 the number of permutations that start with the
+ *  same number is 2. r is that number.
+ *
+ *  r = n!/n
+ *
+ *  we then need to find which run the kth permutation occurs in, let that index
+ *  be i, i = k/r.
+ *  Once we find i we just need to get its value by indexing into C. its important
+ *  that C shrinks to maintain the inequality for future recursions.
+ *  Finally we update k by setting it to the number of remaining positions we need 
+ *  to skip over (aka k - the number of pos we skipped = r*i) so k = k-(r*i)
+ *
+ *  repeat this until len(C) == 1
+ *
+ *  We can speed up the impl by pre calculating factorials but ill leave that
+ *  as an excercise to the reader lmao.
+ *
+ *
+ *  PS: This is exactly how forward backwards works in bioinformatics, if interested
+ *  check Ben Langmeads vids on YT
+ *
+ */
+
 class Solution {
 public:
   auto fac(ll n) -> ll{
