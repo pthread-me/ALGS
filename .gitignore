@@ -10,5 +10,7 @@
 !cpp/**/*.hpp
 !cpp/CMakeLists.txt
 
+!README.md
+
 #black list
 build
