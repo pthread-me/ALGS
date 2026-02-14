@@ -4,6 +4,7 @@ project(MyLib VERSION 0.1 DESCRIPTION "Practice")
 set(CMAKE_EXPORT_COMPILE_COMMANDS on)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED on )
+set(CMAKE_BUILD_TYPE Debug)
 
 
 add_executable(main src/main.cpp)
