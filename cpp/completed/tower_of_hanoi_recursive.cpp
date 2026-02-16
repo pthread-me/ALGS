@@ -46,20 +46,20 @@ auto print_tower(vector<vector<ll>>& T){
 
 
 
-auto hanoi(vector<vector<ll>>& T, ll from, ll to, ll temp, ll n) -> void{
+auto hanoi(vector<vector<ll>>& T, ll from, ll to, ll temp, ll n, ll res) -> ll{
 
   if (n==0){
-    return;
+    return res;
   };
 
-  hanoi(T, from, temp, to, n-1);
+  res += hanoi(T, from, temp, to, n-1, 0);
   println("n: {}, val: {}, From: {}, To: {}", n, T[from].back(), from, to);
   print_tower(T);
   auto nth = T[from].back();
   T[from].pop_back();
   T[to].push_back(nth);
-  hanoi(T, temp, to, from, n-1);
-
+  res += hanoi(T, temp, to, from, n-1, 1);
+  return res;
 }
 
 int main(){
@@ -90,10 +90,13 @@ int main(){
   }
   */
 
-  vector<ll> A{4,3,2,1};
+  vector<ll> A{6,5,4,3,2,1};
   vector<ll> B = vector<ll>();
   vector<ll> C = vector<ll>();
   auto T = vector{A,B,C};
 
-  hanoi(T,0,2,1, A.size());
+  auto res = hanoi(T,0,2,1, A.size(), 0);
+  print_tower(T);
+
+  println("Result = {}", res);
 }
