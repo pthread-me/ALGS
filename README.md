@@ -1,10 +1,14 @@
 # Solutions Repo
 
-## My solutions (sometimes stoles, often)
-For competitive programming/leetcode questions
+## My solutions
+For competitive programming practice questions
 
-All files prefixeded with con_#_ABC are from codeforces # is the contest number
-ALL files with #.cpp/py are leetcode with # being the question number
+### CPP
+cpp/  contains completed solutions for cses, leetcode, and codeforces.
+I only recently started on it so its less filled compared to py/
+
+### Python
+py/ contails mostly leetcode solutions in sol/ with the question number
 
 
-Some files have explaination at the top, others dont
+Most interesting problemns have explaination at the top.

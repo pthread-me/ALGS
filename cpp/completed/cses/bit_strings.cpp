@@ -21,20 +21,13 @@ namespace sr = ranges;
 namespace sv = views;
 
 
-/*
- * the number of trailing 0s is = to the number of 5*2 in the prime factors
- * of n!. since the # of 2s will always be <= 5s in the factors we can
- * only count the number of 5s. To do that we calculate the multiples of 5
- * until N
- *
- */
 auto solve(ull n) -> ull {
-  ull cur = n;
-  ull res = 0;
+  ull const base = 2;
+  ull res = base;
+  ull mod = 1000000000 + 7;
 
-  while(cur > 0){
-    res += cur/5;
-    cur /= 5;
+  for (ull i=0; i<n; ++i){
+    res = (res * base) % (mod); 
   }
 
   return res;
@@ -46,5 +39,5 @@ int main(){
 
   ll n = stoll(line); 
 
-  cout << solve(n);
+  cout << solve(n-1);
 }
