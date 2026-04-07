@@ -66,36 +66,10 @@ auto read_line() -> vector<T> {
     | sr::to<vector<T>>(); 
 }
 
-template<formattable<char> T>
-auto print_vec(vector<T>& v) -> void{
-  print("{}", *v.begin());
-  for(auto it = next(v.begin()); it!=v.end(); ++it){
-    print(" {}", *it);
-  }
-  println();
-}
 
 
 
-auto sol(ll x, ll y) -> void {
-  vl res{};
-  res.reserve(x+y);
-
-  if(max(x,y) % min(x, y) != 0){
-    println("1");
-    while(x){
-      res.push_back(1);
-      --x;
-    }
-    while(y){
-      res.push_back(-1);
-      --y;
-    }
-    print_vec(res);
-    return;
-  }
-
-  ll r = min(x, y);
+auto sol() -> void {
 
 }
 
@@ -106,8 +80,14 @@ int main(){
   ull t = stoll(line);
 
   for(auto _: srv::iota(0ull, t)){
+    auto l = read_line<ull>();
     auto nums = read_line<ull>();
-    sol(nums[0], nums[1]);
+
+    if(accumulate(nums.begin(), nums.end(), 0) % 2 == 1 || l[1] * nums.size() % 2 == 0){
+      println("yes");
+    }else{
+      println("no");
+    }
   }
 
 
