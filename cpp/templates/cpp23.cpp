@@ -31,32 +31,23 @@ inline auto trim(string_view s) -> string_view{
 
 template<typename T>
 concept number = is_integral_v<T>;
-template<typename T>
-concept printable =  requires (ostream& os, T const& t) {
-  {os << t} -> same_as<ostream&>;
-};
 
 template<typename T>
 auto read_line() -> vs {
   string line;
   getline(cin, line);
-  
-  vs res{};
+
   return trim(line) | srv::split(' ') 
     | srv::transform([](auto&& sub) -> string{
       return std::string(sub.begin(), sub.end());
       }) 
-    | sr::for_each([&res](string s){res.push_back(s);}); 
-
-    return res;
+    | sr::to<vs>(); 
 }
-
 template<number T>
 auto read_line() -> vector<T> {
   string line;
   getline(cin, line);
 
-  vector<T> res{};
   return trim(line) | srv::split(' ') 
     | srv::transform([](auto&& sub) -> T{
         auto b = &*sub.begin();
@@ -65,21 +56,21 @@ auto read_line() -> vector<T> {
 
         auto [ptr, err] = from_chars(b, e, i);
         if(err == errc::result_out_of_range || err == errc::invalid_argument){
-          cerr << "Error in line to vector<{}> read " <<  typeid(T).name() << "\n";
+          println(cerr, "Error in line to vector<{}> read", typeid(T).name());
           exit(1);
         }
         return i;
       }) 
-    | sr::for_each([&res](T a){res.push_back(a);}); 
+    | sr::to<vector<T>>(); 
 }
 
-template<printable T>
+template<formattable<char> T>
 auto print_vec(vector<T>& v) -> void{
-  cout << *v.begin();
+  print("{}", *v.begin());
   for(auto it = next(v.begin()); it!=v.end(); ++it){
-    cout << " " << *it;
+    print(" {}", *it);
   }
-  cout << "\n";
+  println();
 }
 
 
