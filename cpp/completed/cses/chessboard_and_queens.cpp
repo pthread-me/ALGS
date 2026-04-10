@@ -4,6 +4,7 @@ using namespace std;
 
 struct pairhash {
 public:
+
   // literally stolen word for word
   template <typename T, typename U>
   std::size_t operator()(const std::pair<T, U> &x) const
@@ -21,6 +22,7 @@ public:
 };
 
 
+
 using ll =  long long;
 using ull =  unsigned long long;
 using us = unordered_set<string>;
@@ -28,6 +30,9 @@ using um = unordered_map<char, ull>;
 using vs = vector<string>;
 using vl = vector<ll>;
 using vvl = vector<vl>;
+
+using pair_set = unordered_set<pair<ll,ll>, pairhash>;
+
 
 namespace srv = ranges::views;
 namespace sr = ranges;
@@ -110,55 +115,59 @@ auto print_vec(vector<T>& v) -> void{
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-// This one was actually really fun, we dont use lists to create game examples.
-// instead notice that if n = 5, the we have 3,2 (after filtering draws)
-// so we start from index i=0 until n
-// loser wins 2 out of 3 so the win the 4,1 and 5,2 but lose the 1,3 - 2,4 - 3,5
-// This can we done by modulo. look at the code
+auto sol(ull i, vector<pair<ll,ll>>& blocked, vector<pair<ll,ll>>& used, ull ldiag, ull rdiag) -> ull {
+  auto get_ldiag = [](ull i, ull j) -> ull{return  1 << (i-j+7) ;};
+  auto get_rdiag = [](ull i, ull j) -> ull{return  1 << (i+j)   ;};
+
+  if(i==8) return 1;
+
+  ull res = 0;
+  for(ull j=0; j<8; ++j){ 
+    auto pos = make_pair(i, j); 
+
+    if(find_if(blocked.begin(),blocked.end(), [&pos](auto e){
+          return e.first==pos.first && e.second == pos.second;}) != blocked.end()) continue;
+    if(find_if(used.begin(),used.end(), [&pos](auto e){
+          return e.first==pos.first || e.second == pos.second;}) != used.end()) continue;
+    if(get_ldiag(i, j) & ldiag || get_rdiag(i, j) & rdiag) continue;
+
+    used.push_back(make_pair(i, j));
+    ldiag |= get_ldiag(i, j);
+    rdiag |= get_rdiag(i, j);
+
+    res += sol(i+1, blocked, used, ldiag, rdiag);
+
+    used.pop_back();
+    ldiag ^= get_ldiag(i, j);
+    rdiag ^= get_rdiag(i, j);
+  }
+  return res;
+}
 
 int main(){
   string line;
-  getline(cin, line);
-
-  ll t = stoull(line);
-
-  for(auto _: srv::iota(0, t)){
-    auto nums = read_line<ll>();
-    ll won = *max_element(next(nums.begin()), nums.end());
-    ll lost = *min_element(next(nums.begin()), nums.end());
-    ll n = accumulate(next(nums.begin()), nums.end(), 0);
-
-    //cout << "n " << n << " won " << won << " lost " << lost << "\n";
-    if(n > *nums.begin()){
-      cout << "NO\n";
-      continue;
-    }else if(n>0 && !(won<n && n==(won+lost))){
-       cout << "NO\n";
-      continue;
+  vector<vector<string>> grid{};
+  for(auto _: srv::iota(0,8)){
+    getline(cin, line);
+    vs r{};
+    for(auto c: trim(line)){
+      r.push_back(string(1, c));
     }
-    cout << "YES\n";
+    grid.push_back(r);
+  }
 
-    vl loser{};
-    vl winner{};
-    loser.reserve(*nums.begin());
-    winner.reserve(*nums.begin());
+  vector<pair<ll,ll>> used{};
+  vector<pair<ll,ll>> blocked{};
+  ull ldiag = 0ull;
+  ull rdiag = 0ull;
 
-    for(ll i=0; i<n; i++){
-      loser.push_back((i+won)%n + 1);
-      winner.push_back(i + 1);
-    }
-
-    for(ll j=n+1; j<=*nums.begin(); j++){
-      loser.push_back(j);
-      winner.push_back(j);
-    }
-
-    if(nums[1] < nums[2]){
-      print_vec(loser);
-      print_vec(winner);
-    }else{
-      print_vec(winner);
-      print_vec(loser);
+  for(ull i: srv::iota(0, 8)){
+    for(ull j: srv::iota(0, 8)){
+      if(grid[i][j] == "*"){
+        blocked.push_back(make_pair(i, j));
+      }
     }
   }
+
+  cout << sol(0, blocked, used, ldiag, rdiag);
 }

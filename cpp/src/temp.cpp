@@ -1,81 +1,148 @@
-#include <algorithm>
-#include <array>
 #include <bits/stdc++.h>
-#include <numeric>
-#include <optional>
-#include <print>
-#include <ranges>
-#include <string>
-#include <string_view>
-#include <tuple>
-#include <unistd.h>
-#include <vector>
-
+ 
 using namespace std;
+using ll =  long long;
+using ull =  unsigned long long;
+using us = unordered_set<string>;
+using um = unordered_map<char, ull>;
+using vs = vector<string>;
+using vl = vector<ll>;
+using vvl = vector<vl>;
+using vul = vector<ull>;
+using vul = vector<ull>;
 namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
-using ll =  long long;
-
-auto solve(ll n, vector<ll>& perm, vector<ll>& nums, ll i) -> bool{
-  //println("i: {}", i);
-  if(i>=n) return true;   
-
-  ll j = i;
-  bool found_in = nums[i] == perm[i];
-  while((j+1)<n && nums[j+1] == nums[j]){
-    if(nums[j] == perm[j]) found_in = true;
-    j++;
-  }
-  //println("j: {}", j);
-
-  if (!found_in){
-    if(i>0 && (i>0 && !(nums[i]==perm[i-1] && nums[i-1] == perm[i]))){
-      found_in = nums[i] == perm[i-1];
-    }else{
-      found_in = false;
-    }
-
-    if(j<n-1 && !(nums[j]==perm[j+1] && nums[j+1]==perm[j])){
-      found_in = nums[j] = perm[j+1];
-    }else{
-      found_in = false;
-    }
-  }
-
-  if(!found_in) return false;
-
-  //for(; i<=j; i++){
-  //  perm[i] = nums[i];
-  //}
-  i = j+1;
-  //println("perm: {}\nnums: {}", perm, nums);
-  return solve(n, perm, nums, i);
+ 
+inline auto ltrim(string_view s) -> string_view {
+  if(s.size() == 0) return string_view{s};
+  auto it=s.find_last_not_of(" \n\t\f\r\v");
+  return s.substr(0, it+1);
 }
-
-
-int main(){
+inline auto rtrim(string_view s) -> string_view {
+  if(s.size()==0) return s;
+  auto it=s.find_first_not_of(" \n\t\f\r\v");
+  return s.substr(it);
+}
+inline auto trim(string_view s) -> string_view{
+  return ltrim(rtrim(s));
+}
+ 
+ 
+template<typename T>
+concept number = is_integral_v<T>;
+template<typename T>
+concept printable =  requires (ostream& os, T const& t) {
+  {os << t} -> same_as<ostream&>;
+};
+ 
+template<typename T>
+auto read_line() -> vs {
   string line;
   getline(cin, line);
-  ll t = stoll(line);
+  
+  vs res{};
+  auto x = trim(line) | srv::split(' ') 
+    | srv::transform([](auto&& sub) -> string{
+      return std::string(sub.begin(), sub.end());
+      });
+  sr::for_each(x.begin(), x.end(), [&res](string s){res.push_back(s);}); 
+ 
+  return res;
+}
+ 
+template<number T>
+auto read_line() -> vector<T> {
+  string line;
+  getline(cin, line);
+ 
+  vector<T> res{};
+  auto x = trim(line) | srv::split(' ') 
+    | srv::transform([](auto&& sub) -> T{
+        auto b = &*sub.begin();
+        auto e = &*sub.end();
+        T i{};
+ 
+        auto [ptr, err] = from_chars(b, e, i);
+        if(err == errc::result_out_of_range || err == errc::invalid_argument){
+          cerr << "Error in line to vector<{}> read " <<  typeid(T).name() << "\n";
+          exit(1);
+        }
+        return i;
+      });
+ 
+  sr::for_each(x.begin(), x.end(), [&res](auto&& a){res.push_back(a);}); 
+  return res;
+}
+ 
+template<printable T>
+auto print_vec(vector<T>& v) -> void{
+  cout << *v.begin();
+  for(auto it = next(v.begin()); it!=v.end(); ++it){
+    cout << " " << *it;
+  }
+  cout << "\n";
+}
+ 
+ 
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+// ----------------------------------------------------------------------------
+ 
+ 
+/*
+ * Stole the solution from: 
+ *  https://phuongdinh1411.github.io/cses-analyses/problem_soulutions/introductory_problems/apple_division_analysis
+ *
+ *  We basically use a bit mask to go over all possible sets, and adding the values for
+ *  the elements in the set. Then doing a min check. AKA brute force.
+ *
+ *  I had a backtrack alg that worked for all n < 20 but couldnt fix it for n>=20
+ *  so whatever. Also good to know about bit enumeration since I always forget thats a thing we can
+ *  do with small n
+ *
+ */
+ 
+auto sol(vl& nums) -> ull{
+  ll t = accumulate(nums.begin(), nums.end(), 0ull);
 
-  for(auto _ : srv::iota(0, t)){
-    getline(cin, line);
-    ll n = stoll(line);
+  ll diff = t;
+  for(ll mask=0; mask<1<<nums.size(); ++mask){
+    ll g1 = 0;
+    for(ll i=0; i<nums.size(); ++i){
+      if(mask & 1<<i){
+        g1 += nums[i];
+      }
+    }
+    ll g2 = t - g1;
+    diff = min(diff, abs(g2-g1));
+  }
+  return diff;
+}
+ 
+auto sol(vector<vector<string>>& grid) -> ull {
+  
 
-    getline(cin, line);
-    auto perm = line 
-      | srv::split(' ')
-      | srv::transform([](auto e){return stoll(string(string_view(e)));})
-      | sr::to<vector<ll>>(); 
-    
+  for(ull i: srv::iota(0, 8)){
+    for(ull j: srv::iota(0, 8)){
+      if(grid[i][j] != "."){
+        grid[i][j] = "-";
 
-    getline(cin, line);
-    auto nums = line 
-      | srv::split(' ')
-      | srv::transform([](auto e){return stoll(string(string_view(e)));})
-      | sr::to<vector<ll>>(); 
-    
-    println("{}", solve(n, perm, nums, 0) ? "YES" : "NO");
+      }
+    }
+  }
+}
+ 
+int main(){
+
+  vector<vector<string>> grid{};
+  for(auto _: srv::iota(0,8)){
+    grid.push_back(read_line<string>());
+  }
+
+  for(auto r: grid){
+    print_vec(r);
   }
 }

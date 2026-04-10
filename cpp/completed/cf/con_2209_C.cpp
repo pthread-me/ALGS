@@ -1,22 +1,6 @@
 #include <bits/stdc++.h>
 
 using namespace std;
-
-// Pair Hashing
-template<typename T>
-concept number = is_integral_v<T>;
-
-struct pairhash {
-public:
-  template <typename T, typename U>
-  std::size_t operator()(const std::pair<T, U> &x) const
-  {
-    return (std::hash<T>()(x.first) * 7687 ) % (std::hash<U>()(x.second) *599 + 6907);
-  }
-};
-
-
-
 using ll =  long long;
 using ull =  unsigned long long;
 using us = unordered_set<string>;
@@ -25,12 +9,7 @@ using vs = vector<string>;
 using vl = vector<ll>;
 using vvl = vector<vl>;
 using vul = vector<ull>;
-
-using n_to_n_pairmap = unordered_map<pair<ull,ull>, ull, pairhash>;
-using n_to_s_pairmap = unordered_map<pair<ull,ull>, string, pairhash>;
-using s_to_n_pairmap = unordered_map<pair<string,string>, ull, pairhash>;
-using s_to_s_pairmap = unordered_map<pair<string,string>, string, pairhash>;
-
+using vul = vector<ull>;
 namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
@@ -50,8 +29,8 @@ inline auto trim(string_view s) -> string_view{
 }
 
 
-
-
+template<typename T>
+concept number = is_integral_v<T>;
 
 template<typename T>
 auto read_line() -> vs {
@@ -94,12 +73,38 @@ auto print_vec(vector<T>& v) -> void{
   println();
 }
 
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 
-auto sol() -> void {
+auto sol(ll n) -> ull {
+  auto query = [](ull i, ull j) -> ull {
+    string line;
+    println("? {} {}", i, j);
+    cout.flush();
+    getline(cin, line);
+    return stoull(line);
+  };
 
+  for(ull i=1; i<n-2; i+=2){
+    if(query(i, i+1) == 1){
+      return i;
+    }  
+  }
+
+  if(query(1, n-1)+query(2, n-1) == 1) return n-1;
+  else return n;
 }
+
 
 int main(){
 
- 
+  string line;
+  getline(cin, line);
+  ull t = stoll(line);
+
+  for(auto _: srv::iota(0ull, t)){
+    getline(cin, line);
+    ll n = stoll(line);
+    println("! {}", sol(2*n));
+  }
 }
