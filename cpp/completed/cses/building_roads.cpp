@@ -3,7 +3,6 @@
 using namespace std;
 
 
-
 using ll =  long long;
 using ull =  unsigned long long;
 using vs = vector<string>;
@@ -105,21 +104,68 @@ constexpr auto mypow(T a, T b) -> T {
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+
+/*
+  We just use a union find structure to place connected components,
+  I'm also using a rank array for each component. at the end. every rank
+  that is -INF means its not the root of a component so we only have C
+  elements each being a root, thus we need C-1 connections.
+ 
+ */
+
+auto find(vl& reps, ll i) -> ll{
+  if(i<0 || i>=reps.size()){
+    cerr << "Invalid index " << i << " in find op\n";
+    exit(1);
+  }  
+  if(i == reps[i]) return i;
+  
+  ll r = find(reps, reps[i]);
+  reps[i] = r;
+  return r;
+}
+
+auto join(vl& reps, vl& rank, ll i, ll j) -> void {
+  ll ri = find(reps, i); 
+  ll rj = find(reps, j); 
+  if(ri == rj) return;
+  
+  if(rank[ri] < rank[rj]){
+    swap(ri, rj);
+  }
+  rank[ri] += rank[rj];
+  rank[rj] = NINF;
+  reps[rj] = ri;
+}
+
+
 int main(){
- ll m, n;
- map<ll,vector<ll>> neigh{}; 
- cin >> n >> m;
+  ll n, m;
+  cin >> n >> m;
 
- for(auto c: srv::iota(0, n)) neigh[c] = vector<ll>{};
- for(auto _: srv::iota(0, m)){
-    ll s, d;
-    cin >> s >> d;
-    neigh[s].push_back(d);
- }
+  vl rank(n, 1);
+  vl reps(n);
+  for(ll i=0; i<n; ++i) reps[i] = i;
 
- for(auto&& [key, value]: neigh){
-    print_vec(value);
- }
 
+  for(auto _: srv::iota(0, m)){
+    ll x, y;
+    cin >> x >> y;
+    join(reps, rank, x-1, y-1);
+  }
+  
+  cout << static_cast<ll>(sr::count_if(rank.begin(), rank.end(), [](auto&& e){return e>NINF;}))-1 << "\n";
+
+  // linear
+  ll i=0;
+  while(i<n){
+    while(i<n && rank[i] == NINF) ++i;
+    ll j = i+1;
+    while(j<n && rank[j]==NINF) ++j;
+    if(i<n && j<n){
+      cout << i+1 << " " << j+1 << "\n";
+    }
+    i=j;
+  }
 
 }
