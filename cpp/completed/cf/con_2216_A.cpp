@@ -16,7 +16,6 @@ namespace sr = ranges;
 namespace sv = views;
 
 static const ll INF = numeric_limits<ll>::max();
-static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
   if(s.size() == 0) return string_view{s};
@@ -104,85 +103,63 @@ constexpr auto mypow(T a, T b) -> T {
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-/*
-  We do normal BFS until we hit the target B, since its BFS this means 
-  the first hit is the min, while traversing we keep 2 matricies, a 
-  generic visited, and a matrix n*m of pairs that stores the parent of
-  each visited cell. once we hit B we can use the parrent matrix to reconstruct
-  the path.
- */
 
+auto sol(vl& a, vl& b, ll n, ll k) -> void{
+  vl cap(a.size(), 0);
+  
+  ll needed = 0;
+  for(auto e: b){
+    cap[e-1]++;
+    needed += (k+1)>e ? ((k+1)-e):0;
+  }
 
-vector<tuple<ll,ll,string>> dir{{0,-1,"L"}, {0,1,"R"}, {-1,0,"U"}, {1,0,"D"}};
+  if(needed>1000){
+    cout << "-1\n";
+    return;
+  }
+  if(needed == 0){
+    cout << "0\n\n";
+    return;
+  }
 
-inline auto valid(vvs& grid, vvl& visited, ll i, ll j) -> bool{
-  return min(i,j)>=0 && i<grid.size() && j<grid[0].size() && !visited[i][j] && grid[i][j] != "#";
+  cout << needed << "\n";
+
+  bool has_left = false;
+  do{
+    has_left = false;
+    for(ll i=0; i<b.size(); ++i){
+      if(b[i] == k+1) continue;
+      if(cap[b[i]] < a[b[i]]){
+        cap[b[i]-1]--;
+        b[i]++;
+        cap[b[i]-1]++;
+
+        cout << i+1 << " ";
+      }
+      if(b[i] < k+1) has_left = true;
+    }
+  }while(has_left);
+  cout << "\n";
 }
 
 
 int main(){
+  ll t, n, k;
   string line;
-  ll n, m;
-  cin >> n >> m;
-  getline(cin, line); // move past \n
-  
-  pair<ll,ll> start;
-  pair<ll,ll> end;
-  vvs grid(n, vector<string>(m, ""));
-  vvl vis(n, vl(m, 0));
-  vector<vector<pair<ll, ll>>> par(n, vector<pair<ll,ll>>(m, make_pair(INF, INF)));
-  queue<pair<ll,ll>> q;
 
-  for(auto x: srv::iota(0, n)){
-    getline(cin, line);
-    for(auto y: srv::iota(0, m)){
-      grid[x][y] = line[y];
-      if(line[y] == 'A') start = make_pair(x, y);
-      if(line[y] == 'B') end = make_pair(x, y);
-    }
-  }
+  getline(cin, line);
+  t = stoll(line);
 
+  for(auto _: srv::iota(0, t)){
+    auto params = read_line<ll>();
+    n=params[0];
+    k = params[1];
 
+    vl a = read_line<ll>();
+    vl b = read_line<ll>();
+    a.push_back(INF);
 
-  q.push(start);
-  vis[start.first][start.second] = 1;
-  while(!q.empty()){
-    auto cur = q.front();
-    q.pop();
-
-    if(grid[cur.first][cur.second] == "B") break;
-
-    for(auto [dy, dx, D]: dir){
-      if(valid(grid, vis, cur.first+dy, cur.second+dx)){
-        vis[cur.first+dy][cur.second+dx] = 1;
-        par[cur.first+dy][cur.second+dx] = make_pair(cur.first, cur.second);
-        q.push(make_pair(cur.first+dy, cur.second+dx));
-      }
-    }
-  }
-
-  if(!vis[end.first][end.second]){
-    cout << "NO\n";
-  }else{
-    cout << "YES\n";
-    auto cur = end;
-    vs answer{};
-    answer.reserve(n*m);
-
-    while(cur != start){
-      auto cur_p = par[cur.first][cur.second];
-      for(auto [dx, dy, D]: dir){
-        if(cur.first - cur_p.first == dx && cur.second - cur_p.second == dy){
-          answer.push_back(D);
-          cur = cur_p;
-          break;
-        }
-      }
-    }
-    cout << answer.size() << "\n";
-    reverse(answer.begin(), answer.end());
-    for(auto c: answer) cout << c;
-    cout << "\n";
+    sol(a, b, n, k);
   }
 
 }

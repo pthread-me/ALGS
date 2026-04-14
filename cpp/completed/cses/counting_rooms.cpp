@@ -16,7 +16,6 @@ namespace sr = ranges;
 namespace sv = views;
 
 static const ll INF = numeric_limits<ll>::max();
-static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
   if(s.size() == 0) return string_view{s};
@@ -104,19 +103,18 @@ constexpr auto mypow(T a, T b) -> T {
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-/*
-  We do normal BFS until we hit the target B, since its BFS this means 
-  the first hit is the min, while traversing we keep 2 matricies, a 
-  generic visited, and a matrix n*m of pairs that stores the parent of
-  each visited cell. once we hit B we can use the parrent matrix to reconstruct
-  the path.
- */
 
+vvl dir{{0,-1}, {0,1}, {-1,0}, {1,0}};
+auto dfs(vvs& grid, vvl& visited, ll i, ll j) -> void{
+  auto valid_move = [&grid, &visited](ll x, ll y)->bool{
+    assert(grid.size()>0);
+    return min(x,y)>-1 && x<grid.size() && y<grid[0].size() && grid[x][y] != "#" && !visited[x][y]; 
+  };
 
-vector<tuple<ll,ll,string>> dir{{0,-1,"L"}, {0,1,"R"}, {-1,0,"U"}, {1,0,"D"}};
-
-inline auto valid(vvs& grid, vvl& visited, ll i, ll j) -> bool{
-  return min(i,j)>=0 && i<grid.size() && j<grid[0].size() && !visited[i][j] && grid[i][j] != "#";
+  visited[i][j] = 1;
+  for(auto d: dir){
+    if(valid_move(i+d[0], j+d[1])) dfs(grid, visited, i+d[0], j+d[1]); 
+  }
 }
 
 
@@ -124,65 +122,26 @@ int main(){
   string line;
   ll n, m;
   cin >> n >> m;
-  getline(cin, line); // move past \n
-  
-  pair<ll,ll> start;
-  pair<ll,ll> end;
-  vvs grid(n, vector<string>(m, ""));
-  vvl vis(n, vl(m, 0));
-  vector<vector<pair<ll, ll>>> par(n, vector<pair<ll,ll>>(m, make_pair(INF, INF)));
-  queue<pair<ll,ll>> q;
 
-  for(auto x: srv::iota(0, n)){
-    getline(cin, line);
-    for(auto y: srv::iota(0, m)){
-      grid[x][y] = line[y];
-      if(line[y] == 'A') start = make_pair(x, y);
-      if(line[y] == 'B') end = make_pair(x, y);
+  vvs grid(n, vs(m, ""));
+  vvl visited(n, vl(m, 0));
+
+  for(ll i=0; i<n; ++i){
+    cin >> line;
+    for(ll j=0; j<m; ++j){
+      grid[i][j] = line[j];
     }
   }
 
 
-
-  q.push(start);
-  vis[start.first][start.second] = 1;
-  while(!q.empty()){
-    auto cur = q.front();
-    q.pop();
-
-    if(grid[cur.first][cur.second] == "B") break;
-
-    for(auto [dy, dx, D]: dir){
-      if(valid(grid, vis, cur.first+dy, cur.second+dx)){
-        vis[cur.first+dy][cur.second+dx] = 1;
-        par[cur.first+dy][cur.second+dx] = make_pair(cur.first, cur.second);
-        q.push(make_pair(cur.first+dy, cur.second+dx));
-      }
+  ll res = 0;
+  for(ll i=0; i<n; ++i){
+    for(ll j=0; j<m; ++j){
+      if(visited[i][j] || grid[i][j] == "#") continue;
+      dfs(grid, visited, i, j);
+      ++res;
     }
   }
 
-  if(!vis[end.first][end.second]){
-    cout << "NO\n";
-  }else{
-    cout << "YES\n";
-    auto cur = end;
-    vs answer{};
-    answer.reserve(n*m);
-
-    while(cur != start){
-      auto cur_p = par[cur.first][cur.second];
-      for(auto [dx, dy, D]: dir){
-        if(cur.first - cur_p.first == dx && cur.second - cur_p.second == dy){
-          answer.push_back(D);
-          cur = cur_p;
-          break;
-        }
-      }
-    }
-    cout << answer.size() << "\n";
-    reverse(answer.begin(), answer.end());
-    for(auto c: answer) cout << c;
-    cout << "\n";
-  }
-
+  cout << res;
 }

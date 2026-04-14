@@ -15,9 +15,6 @@ namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
 
-static const ll INF = numeric_limits<ll>::max();
-static const ll NINF = numeric_limits<ll>::min();
-
 inline auto ltrim(string_view s) -> string_view {
   if(s.size() == 0) return string_view{s};
   auto it=s.find_last_not_of(" \n\t\f\r\v");
@@ -84,7 +81,7 @@ template<printable T>
 auto print_vec(vector<T>& v) -> void{
   cout << *v.begin();
   for(auto it = next(v.begin()); it!=v.end(); ++it){
-    cout << " " << *it;
+    cout << "" << *it;
   }
   cout << "\n";
 }
@@ -104,85 +101,45 @@ constexpr auto mypow(T a, T b) -> T {
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-/*
-  We do normal BFS until we hit the target B, since its BFS this means 
-  the first hit is the min, while traversing we keep 2 matricies, a 
-  generic visited, and a matrix n*m of pairs that stores the parent of
-  each visited cell. once we hit B we can use the parrent matrix to reconstruct
-  the path.
- */
 
 
-vector<tuple<ll,ll,string>> dir{{0,-1,"L"}, {0,1,"R"}, {-1,0,"U"}, {1,0,"D"}};
 
-inline auto valid(vvs& grid, vvl& visited, ll i, ll j) -> bool{
-  return min(i,j)>=0 && i<grid.size() && j<grid[0].size() && !visited[i][j] && grid[i][j] != "#";
+constexpr auto precalc(vul& domain) -> void{
+  ll power = 0;
+
+  for(ll len=1; len < 18; ++len){
+    domain.push_back(domain[len-1] + 9ull*mypow(10,power)*len); 
+    ++power;
+  }
+}
+
+auto sol(vul& domain, ull k) -> void{
+  ll k_group = 0; // k_group is equivalent to the # of chars
+  while(k>domain[k_group]) k_group++;
+
+  // setting k to the index of the character, relevant to the group,
+  // -1 since I want it to be 0 based
+  k = k - domain[k_group-1] - 1;
+  ull group_base = mypow(10, k_group-1);
+  ull target = group_base + (k/k_group);
+
+  string string_target = to_string(target);
+  cout << string_target[k%k_group] << "\n";
 }
 
 
 int main(){
-  string line;
-  ll n, m;
-  cin >> n >> m;
-  getline(cin, line); // move past \n
-  
-  pair<ll,ll> start;
-  pair<ll,ll> end;
-  vvs grid(n, vector<string>(m, ""));
-  vvl vis(n, vl(m, 0));
-  vector<vector<pair<ll, ll>>> par(n, vector<pair<ll,ll>>(m, make_pair(INF, INF)));
-  queue<pair<ll,ll>> q;
+  vul domain{};
+  domain.reserve(18);
+  domain.push_back(0);
+  precalc(domain);
 
-  for(auto x: srv::iota(0, n)){
-    getline(cin, line);
-    for(auto y: srv::iota(0, m)){
-      grid[x][y] = line[y];
-      if(line[y] == 'A') start = make_pair(x, y);
-      if(line[y] == 'B') end = make_pair(x, y);
-    }
-  }
-
-
-
-  q.push(start);
-  vis[start.first][start.second] = 1;
-  while(!q.empty()){
-    auto cur = q.front();
-    q.pop();
-
-    if(grid[cur.first][cur.second] == "B") break;
-
-    for(auto [dy, dx, D]: dir){
-      if(valid(grid, vis, cur.first+dy, cur.second+dx)){
-        vis[cur.first+dy][cur.second+dx] = 1;
-        par[cur.first+dy][cur.second+dx] = make_pair(cur.first, cur.second);
-        q.push(make_pair(cur.first+dy, cur.second+dx));
-      }
-    }
-  }
-
-  if(!vis[end.first][end.second]){
-    cout << "NO\n";
-  }else{
-    cout << "YES\n";
-    auto cur = end;
-    vs answer{};
-    answer.reserve(n*m);
-
-    while(cur != start){
-      auto cur_p = par[cur.first][cur.second];
-      for(auto [dx, dy, D]: dir){
-        if(cur.first - cur_p.first == dx && cur.second - cur_p.second == dy){
-          answer.push_back(D);
-          cur = cur_p;
-          break;
-        }
-      }
-    }
-    cout << answer.size() << "\n";
-    reverse(answer.begin(), answer.end());
-    for(auto c: answer) cout << c;
-    cout << "\n";
+  ll q;
+  cin >> q;
+  for(; q>0; --q){
+    ull k;
+    cin >> k;
+    sol(domain, k);
   }
 
 }

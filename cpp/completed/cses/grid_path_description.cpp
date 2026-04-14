@@ -16,7 +16,6 @@ namespace sr = ranges;
 namespace sv = views;
 
 static const ll INF = numeric_limits<ll>::max();
-static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
   if(s.size() == 0) return string_view{s};
@@ -104,85 +103,94 @@ constexpr auto mypow(T a, T b) -> T {
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
-/*
-  We do normal BFS until we hit the target B, since its BFS this means 
-  the first hit is the min, while traversing we keep 2 matricies, a 
-  generic visited, and a matrix n*m of pairs that stores the parent of
-  each visited cell. once we hit B we can use the parrent matrix to reconstruct
-  the path.
- */
 
 
-vector<tuple<ll,ll,string>> dir{{0,-1,"L"}, {0,1,"R"}, {-1,0,"U"}, {1,0,"D"}};
+// Observation: 
+//  if we are at a cell A and have the following choice:
+//      x
+//    _ A _
+//      x
+//  so 2 positions are blocked and 2 are open in a prependicular maner, then
+//  there is no solution since taking one will create an island, thus not all
+//  of the 48 steps can be taken without visiting an already touched cell
+//
+//  Another observation is that if we are at a cell A, and there is some cell B
+//  where B!=A and B!=END and B only has only empty neighbor while being unvisited
+//  then once we get to B, we wont be able to leave and its not the end so its a 
+//  failed path
 
-inline auto valid(vvs& grid, vvl& visited, ll i, ll j) -> bool{
-  return min(i,j)>=0 && i<grid.size() && j<grid[0].size() && !visited[i][j] && grid[i][j] != "#";
+const ll N = 7;
+const ll CELLS = 48;
+string path;
+vvl visited(N, vl(N, 0));
+vvl const dir{{0, 1}, {0, -1},{1,0},{-1, 0}};
+
+inline auto available(ll i, ll j) -> bool{
+  return 0<=min(i,j) && N>max(i, j) && !visited[i][j];
 }
 
 
-int main(){
-  string line;
-  ll n, m;
-  cin >> n >> m;
-  getline(cin, line); // move past \n
+// checks if a cell has only one open neighboor while not being visited
+inline auto isolated = [](ll x, ll y) -> bool {
+  return (x!=N-1 && y!=0) && available(x, y) && 
+    (available(x-1, y)+available(x+1, y)+available(x, y-1)+available(x, y+1) == 1);
+};
+inline auto isolated_neighboor(ll const i, ll const j)-> bool{
+  for(auto d: vvl{{-1,-1}, {-1,1}, {1,-1},{1,1}}){
+    if(isolated(i+d[0], j+d[1])) return true;
+  }
+  return false;
+}
+
+inline auto L_split(ll const i, ll const j) -> bool{
+  return (available(i-1, j) && available(i, j+1) && !available(i-1, j+1)) ||
+          (available(i-1, j) && available(i, j-1) && !available(i-1, j-1))||
+          (available(i+1, j) && available(i, j+1) && !available(i+1, j+1))||
+          (available(i+1, j) && available(i, j-1) && !available(i+1, j-1));
+}
+
+auto sol(ll i, ll j, ll s) -> ll {
+  if(s==CELLS && i==N-1 && j==0) return 1;
+
+  // Checking the cross pattern in obs 1
+  if(available(i+1, j) && available(i-1, j) && !available(i, j-1) && !available(i, j+1)){
+    return 0;
+  } 
+  if(!available(i+1, j) && !available(i-1, j) && available(i, j-1) && available(i, j+1)){
+    return 0;
+  }
+  if( L_split(i, j) || isolated_neighboor(i, j)) return 0;
+
   
-  pair<ll,ll> start;
-  pair<ll,ll> end;
-  vvs grid(n, vector<string>(m, ""));
-  vvl vis(n, vl(m, 0));
-  vector<vector<pair<ll, ll>>> par(n, vector<pair<ll,ll>>(m, make_pair(INF, INF)));
-  queue<pair<ll,ll>> q;
 
-  for(auto x: srv::iota(0, n)){
-    getline(cin, line);
-    for(auto y: srv::iota(0, m)){
-      grid[x][y] = line[y];
-      if(line[y] == 'A') start = make_pair(x, y);
-      if(line[y] == 'B') end = make_pair(x, y);
-    }
-  }
-
-
-
-  q.push(start);
-  vis[start.first][start.second] = 1;
-  while(!q.empty()){
-    auto cur = q.front();
-    q.pop();
-
-    if(grid[cur.first][cur.second] == "B") break;
-
-    for(auto [dy, dx, D]: dir){
-      if(valid(grid, vis, cur.first+dy, cur.second+dx)){
-        vis[cur.first+dy][cur.second+dx] = 1;
-        par[cur.first+dy][cur.second+dx] = make_pair(cur.first, cur.second);
-        q.push(make_pair(cur.first+dy, cur.second+dx));
+  ll res = 0;
+  if(path[s] == '?'){
+    for(auto d: dir){
+      if(available(i+d[0], j+d[1])){
+        visited[i+d[0]][j+d[1]] = 1;
+        res += sol(i+d[0], j+d[1], s+1);
+        visited[i+d[0]][j+d[1]] = 0;
       }
     }
-  }
-
-  if(!vis[end.first][end.second]){
-    cout << "NO\n";
   }else{
-    cout << "YES\n";
-    auto cur = end;
-    vs answer{};
-    answer.reserve(n*m);
+    ll di = 0;
+    ll dj = 0;
+    if(path[s] == 'R') ++dj;
+    if(path[s] == 'L') --dj;
+    if(path[s] == 'U') --di;
+    if(path[s] == 'D') ++di;
 
-    while(cur != start){
-      auto cur_p = par[cur.first][cur.second];
-      for(auto [dx, dy, D]: dir){
-        if(cur.first - cur_p.first == dx && cur.second - cur_p.second == dy){
-          answer.push_back(D);
-          cur = cur_p;
-          break;
-        }
-      }
+    if(available(i+di, j+dj)){
+      visited[i+di][j+dj] = 1;
+      res += sol(i+di, j+dj, s+1);
+      visited[i+di][j+dj] = 0;
     }
-    cout << answer.size() << "\n";
-    reverse(answer.begin(), answer.end());
-    for(auto c: answer) cout << c;
-    cout << "\n";
   }
+  return res;
+}
 
+int main(){
+  cin >> path;
+  visited[0][0] = 1;
+  cout << sol(0, 0, 0);
 }
