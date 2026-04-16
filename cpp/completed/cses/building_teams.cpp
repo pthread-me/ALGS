@@ -16,7 +16,7 @@ namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
 
-static const ll INF = numeric_limits<ll>::max() - 10000; // offset possible addition issues
+static const ll INF = numeric_limits<ll>::max();
 static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
@@ -105,49 +105,69 @@ constexpr auto mypow(T a, T b) -> T {
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+// obs:
+// 1) node degree < 3 is req
+// 2) all connected components conforming to 1) are either a chain or 
+//    a circle. 
+// 3) odd cycles are not allowed, but we can figure that out while coloring
+
 /**
- *  Super simple recurese, Memoization is obv but you run out of stack.
- *  bellow is a bottom up approach which is also super simple 
- *
+ * I know its ugly, this is a trivial question that is reduced to vertex color
+ * with C=2 so its solved with simple dfs and visited/colored vectors
  */
 
+auto color(map<ll,vl>& lookup, vl& visited, vl& res, ll cur) -> bool {
+  if(visited[cur]) return true;
+  visited[cur] = 1;
 
-const ll base = 10;
-auto T(ll n) -> ll{
- if(n<10) return 1;
+  vl available{1, 2};
+  for(auto a: lookup[cur]){
+    if(res[a] == available[0]) available[0] = -1;
+    if(res[a] == available[1]) available[1] = -1;
+  }
+  auto c = sr::find_if(available.begin(), available.end(), [](auto e){return e>0;});
+  if(c == available.end()) return false;
 
-  vl digits{}; digits.reserve(7);
-  for(ll p=1; mypow(base, p-1)<=n; ++p ){
-    digits.push_back((n%mypow(base, p))/mypow(base, p-1)); 
+  res[cur] = * c;
+  bool depth_res = true;
+  for(auto a: lookup[cur]){
+    if(visited[a]) continue;
+    depth_res &= color(lookup, visited, res, a);
   }
 
-  ll res = INF;
-  for(auto e: digits){
-    res = min(res, T(res-e));
-  }
-  return res + 1;
+  return depth_res;
 }
 
+
+
 int main(){
-  ll n;
-  cin >> n;
+  ll n, m;
+  cin >> n >> m;
 
-  vl dp(n+1, INF);
-  dp[0] = 0;
-  for(auto i: srv::iota(min(1ll, n), min(n+1, 10ll))) dp[i] = 1;
+  vl visited(n, 0);
+  vl res(n, -1);
+  map<ll, vl> lookup{};
 
-  for(ll i=10; i<n+1; ++i){
-    vl digits{}; digits.reserve(7);
-    for(ll p=1; mypow(base, p-1)<=i; ++p ){
-      digits.push_back((i%mypow(base, p))/mypow(base, p-1)); 
-    }
-    ll res = INF;
-    for(auto e: digits){
-      res = min(res, dp[i-e]);
-    }
-    dp[i] = res + 1;
+  for(auto v: srv::iota(0, n)){
+    lookup[v] = vector<ll>{};
+  }
+  for(auto _: srv::iota(0, m)){
+    ll a, b;
+    cin >> a >> b;
+    lookup[a-1].push_back(b-1);
+    lookup[b-1].push_back(a-1);
   }
 
-  cout << dp.back() << "\n";
-  
+
+  bool colored = true;
+  for(auto& [k, v]: lookup){
+    colored &= color(lookup, visited, res, k);
+  }
+
+  if(colored){
+    print_vec(res);
+  }else{
+      cout << "IMPOSSIBLE\n";
+  }
+
 }

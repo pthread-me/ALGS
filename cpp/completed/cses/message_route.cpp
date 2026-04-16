@@ -16,7 +16,7 @@ namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
 
-static const ll INF = numeric_limits<ll>::max() - 10000; // offset possible addition issues
+static const ll INF = numeric_limits<ll>::max();
 static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
@@ -106,48 +106,66 @@ constexpr auto mypow(T a, T b) -> T {
 //-----------------------------------------------------------------------------
 
 /**
- *  Super simple recurese, Memoization is obv but you run out of stack.
- *  bellow is a bottom up approach which is also super simple 
- *
+ *  Very similar to prev BFS + path algs, except now we use a map of node->nieghboors
+ *  which turns runtime into V+H instead of n^2
  */
 
 
-const ll base = 10;
-auto T(ll n) -> ll{
- if(n<10) return 1;
+auto sol(ll n, ll m, map<ll, vl>& neighboors){
+  ll target = n-1;
 
-  vl digits{}; digits.reserve(7);
-  for(ll p=1; mypow(base, p-1)<=n; ++p ){
-    digits.push_back((n%mypow(base, p))/mypow(base, p-1)); 
+  vl parent(n, -1);
+  vl visited(n, 0);
+ 
+  bool found = false;
+  queue<ll> q;
+  q.push(0);
+  visited[0] = 1;
+
+  while(!q.empty() && !found){
+    ll a = q.front();
+    q.pop();
+
+    for(auto b: neighboors[a]){
+      if(!visited[b]){
+        q.push(b);
+        visited[b] = 1;
+        parent[b] = a;
+        if(b == target) found = true;
+      }
+    }
   }
 
-  ll res = INF;
-  for(auto e: digits){
-    res = min(res, T(res-e));
+  //walk back step
+  if(!visited[target]){
+    cout << "IMPOSSIBLE\n";
+    return;
   }
-  return res + 1;
+
+  ll cur = target;
+  vl ans{target+1};
+  while(cur > 0){
+    ans.push_back(parent[cur] + 1);
+    cur = parent[cur];
+  }
+
+  reverse(ans.begin(), ans.end());
+  cout << ans.size() << "\n";
+  print_vec(ans);
 }
 
 int main(){
-  ll n;
-  cin >> n;
+  ll n, m, target;
+  cin >> n >> m;
 
-  vl dp(n+1, INF);
-  dp[0] = 0;
-  for(auto i: srv::iota(min(1ll, n), min(n+1, 10ll))) dp[i] = 1;
-
-  for(ll i=10; i<n+1; ++i){
-    vl digits{}; digits.reserve(7);
-    for(ll p=1; mypow(base, p-1)<=i; ++p ){
-      digits.push_back((i%mypow(base, p))/mypow(base, p-1)); 
-    }
-    ll res = INF;
-    for(auto e: digits){
-      res = min(res, dp[i-e]);
-    }
-    dp[i] = res + 1;
+  map<ll, vl> nieghboors{};
+  for(auto _: srv::iota(0, m)){
+    ll a, b;
+    cin >> a >> b;
+    nieghboors[a-1].push_back(b-1);
+    nieghboors[b-1].push_back(a-1);
   }
+ 
 
-  cout << dp.back() << "\n";
-  
+  sol(n, m, nieghboors);
 }

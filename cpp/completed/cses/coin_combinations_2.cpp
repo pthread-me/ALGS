@@ -106,48 +106,56 @@ constexpr auto mypow(T a, T b) -> T {
 //-----------------------------------------------------------------------------
 
 /**
- *  Super simple recurese, Memoization is obv but you run out of stack.
- *  bellow is a bottom up approach which is also super simple 
+ * Observation:
+ *  in the example from coin_combination_1 where x = 9 and nums = [2,3,5]
+ *  we repeat for x = 5 both 2+3 and 3+2
+ *  this is because we try for x=5:
+ *    5-2 then 5-3
  *
- */
+ *  if instead we limit our choices to only 2,3,5 as long as we choose 2
+ *  then if we choose 3 our next iter choices become 3,5 and so on.
+ *
+ *  we find that the sequences we choose will be oerders(given that nums is ordered)
+ *  but more importantly no repetition.
+ *
+ *  This can be done by looping through nums {looping through x}
+ *  aka reverse the looping order from prev q
+ *    
+*/
 
 
-const ll base = 10;
-auto T(ll n) -> ll{
- if(n<10) return 1;
+const ll mod =1000*1000*1000 + 7; 
 
-  vl digits{}; digits.reserve(7);
-  for(ll p=1; mypow(base, p-1)<=n; ++p ){
-    digits.push_back((n%mypow(base, p))/mypow(base, p-1)); 
+auto T(vl& nums, ll x)->ll{
+  if(x<0) return 0;
+  if(x == 0) return 1;
+
+  ll res = 0;
+  for(auto e: nums){
+    res += T(nums, x-e) % mod;
   }
-
-  ll res = INF;
-  for(auto e: digits){
-    res = min(res, T(res-e));
-  }
-  return res + 1;
+  return res;
 }
 
 int main(){
-  ll n;
-  cin >> n;
+	ll n, x;
+	cin >> n >> x;
+	vl nums{}; nums.reserve(n);
+	for(auto _: srv::iota(0, n)){
+		ll c; cin >> c;
+		nums.push_back(c);
+	}
+  
+  vl dp(x+1, 0);
+  dp[0] = 1;
+  
 
-  vl dp(n+1, INF);
-  dp[0] = 0;
-  for(auto i: srv::iota(min(1ll, n), min(n+1, 10ll))) dp[i] = 1;
-
-  for(ll i=10; i<n+1; ++i){
-    vl digits{}; digits.reserve(7);
-    for(ll p=1; mypow(base, p-1)<=i; ++p ){
-      digits.push_back((i%mypow(base, p))/mypow(base, p-1)); 
+  for(auto e: nums){
+    for(auto cur: srv::iota(1, x+1)){
+      if(cur-e<0) continue;
+      dp[cur] = (dp[cur] + dp[cur-e]) % mod;
     }
-    ll res = INF;
-    for(auto e: digits){
-      res = min(res, dp[i-e]);
-    }
-    dp[i] = res + 1;
   }
 
-  cout << dp.back() << "\n";
-  
+  cout << dp[x];
 }
