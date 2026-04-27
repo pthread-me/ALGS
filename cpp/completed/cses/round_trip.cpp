@@ -2,6 +2,8 @@
 
 using namespace std;
 
+
+
 using ll =  long long;
 using ull =  unsigned long long;
 using vs = vector<string>;
@@ -14,7 +16,7 @@ namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
 
-static const ll INF = numeric_limits<ll>::max() - 100^000; // offset possible addition issues
+static const ll INF = numeric_limits<ll>::max() - 10000; // offset possible addition issues
 static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
@@ -81,9 +83,11 @@ auto read_line() -> vector<T> {
 
 template<printable T>
 auto print_vec(vector<T>& v) -> void{
-  for(auto& e: v){
-    cout << e << " ";
+  cout << *v.begin();
+  for(auto it = next(v.begin()); it!=v.end(); ++it){
+    cout << " " << *it;
   }
+  cout << "\n";
 }
 
 template<number T>
@@ -95,25 +99,6 @@ constexpr auto mypow(T a, T b) -> T {
   return res;
 }
 
-template<number T, typename ...Rest>
-auto mymin(T& a, T& b, Rest&...args){
-  T res = min(a, b);
-  for(auto p: {args...}){
-    res = min(res, p); 
-  }
-  return res;
-}
-
-
-template<number T, typename ...Rest>
-auto mymax(T& a, T& b, Rest&...args){
-  T res = max(a, b);
-  for(auto p: {args...}){
-    res = max(res, p); 
-  }
-  return res;
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // SOLUTIONS BELLOW
@@ -121,83 +106,72 @@ auto mymax(T& a, T& b, Rest&...args){
 //-----------------------------------------------------------------------------
 
 
-/**
- *  The explaination to this is a bit weird for me, see: 
- *  https://people.engr.tamu.edu/andreas-klappenecker/csce411-f11/csce411-set8.pdf
- *
- *  What we basically do is the following: given 2 seq X and Y, and an LCS Z
- *  then given X_k being the seq from X[0:k] inclusive, then Z_k must
- *  include either X_k or Y_k or both. 
- *
- *  if X[k] == Y[k] then we know that Z_k = Z_(k-1) + 1 since we are adding to it
- *
- *  The hard to see part is when they are not equal, in this case we have 2 choices
- *  the longest seq is either in X_k and Y_(k-1) OR X_(k-1) and Y_k. Both cant be
- *  at k since they are not equal at that element.
- *
- *  an m*n dp is used to save the Z for every X_i Y_j pair
- *
- *
- *  re-building the sol is my work. observe that if all 3 prev states are less than
- *  dp[i][j] then it must be that we added a new element, that gives us the e to add.
- *  which must be a[i] == b[j] so we assert.
- *
- *  if dp[i][j] is not > than the left, right and top-left then no e was added,
- *  so we just move to that state.
- */
+const pair<ll, ll> false_pair = make_pair(-1ll, -1ll);
 
-
+// Passes on correctness but fails on some TLE and idk whats the diff
+// cause it reads similar to other sol i saw
+auto T(vvl& adj, vl& visited, vl& parent, ll i) -> pair<ll, ll> {
+  assert(visited[i] == 0);        
+  visited[i] = 1;                
+  for(ll c: adj[i]){            
+    if(c == parent[i]) continue; 
+    if(visited[c]){ 
+      return make_pair(c, i); 
+    }
+    parent[c] = i; 
+    auto rec_res = T(adj, visited, parent, c); 
+    if(rec_res != false_pair){
+      return rec_res;
+    }
+  }
+  return false_pair;
+}
 
 int main(){
   ll n, m;
   cin >> n >> m;
 
-  vl a{}, b{};
-  for(auto _: srv::iota(0, n)){
-    ll val; cin >> val;
-    a.push_back(val); 
-  }
+  vvl adj(n, vl{});
+
   for(auto _: srv::iota(0, m)){
-    ll val; cin >> val;
-    b.push_back(val); 
+    ll a, b;
+    cin >> a >> b;
+    adj[a-1].push_back(b-1);
+    adj[b-1].push_back(a-1);
+  }
+  
+  pair<ll, ll> p = make_pair(-1ll, -1ll);
+  vl visited(n, 0);
+  vl parent(n, INF);
+
+  for(auto i: srv::iota(0, n)){
+    auto res = T(adj, visited, parent, i);
+    if(res != false_pair){
+      p = res; 
+      break;
+    }
+    transform(visited.begin(), visited.end(), visited.begin(), [](auto _){return 0;});
+    transform(parent.begin(), parent.end(), parent.begin(), [](auto _){return INF;});
   }
 
 
-  // accounting for the empty subarray
-  vvl dp(n+1, vl(m+1, 0));
+  if(p == false_pair){
+    cout << "IMPOSSIBLE";
+  }else{
+    vl ans{};
+    ans.reserve(n);
+    ans.push_back(p.first); 
+    ans.push_back(p.second); 
 
-  for(ll i=1; i<n+1; ++i){
-    for(ll j=1; j<m+1; ++j){
-      if(a[i-1] == b[j-1]){
-        dp[i][j] = dp[i-1][j-1]+1;
-      }
-      else{
-        dp[i][j] = max(dp[i][j-1], dp[i-1][j]);
-      }
+    ll cur = parent[ans.back()];
+    while(cur != ans.front()){
+      ans.push_back(cur);
+      cur = parent[cur];
     }
+    ans.push_back(cur);
+    
+    transform(ans.begin(), ans.end(), ans.begin(), [](ll e){return e+1;});
+    cout << ans.size() << "\n";
+    print_vec(ans);
   }
-
-  // reconstructing result
-  ll y = n;
-  ll x = m;
-  vl res{};
-  while(y>0 && x>0 && dp[y][x] > 0){
-    ll max_elem = mymax(dp[y-1][x-1], dp[y-1][x], dp[y][x-1]); 
-    if(dp[y][x] > max_elem){
-      assert(a[y-1] == b[x-1]);
-      res.push_back(a[y-1]);
-    }
-    if(dp[y-1][x-1] == max_elem){
-      --y; --x;
-    }else if(dp[y-1][x] == max_elem){
-      --y;
-    }else{
-      --x;
-    }
-  }
-
-
-  cout << dp[n][m] << "\n";
-  reverse(res.begin(), res.end());
-  print_vec(res);
 }

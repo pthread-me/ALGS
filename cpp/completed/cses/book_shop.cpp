@@ -2,6 +2,8 @@
 
 using namespace std;
 
+
+
 using ll =  long long;
 using ull =  unsigned long long;
 using vs = vector<string>;
@@ -14,7 +16,7 @@ namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
 
-static const ll INF = numeric_limits<ll>::max() - 100^000; // offset possible addition issues
+static const ll INF = numeric_limits<ll>::max() - 10000; // offset possible addition issues
 static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
@@ -81,9 +83,11 @@ auto read_line() -> vector<T> {
 
 template<printable T>
 auto print_vec(vector<T>& v) -> void{
-  for(auto& e: v){
-    cout << e << " ";
+  cout << *v.begin();
+  for(auto it = next(v.begin()); it!=v.end(); ++it){
+    cout << " " << *it;
   }
+  cout << "\n";
 }
 
 template<number T>
@@ -95,25 +99,6 @@ constexpr auto mypow(T a, T b) -> T {
   return res;
 }
 
-template<number T, typename ...Rest>
-auto mymin(T& a, T& b, Rest&...args){
-  T res = min(a, b);
-  for(auto p: {args...}){
-    res = min(res, p); 
-  }
-  return res;
-}
-
-
-template<number T, typename ...Rest>
-auto mymax(T& a, T& b, Rest&...args){
-  T res = max(a, b);
-  for(auto p: {args...}){
-    res = max(res, p); 
-  }
-  return res;
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // SOLUTIONS BELLOW
@@ -121,83 +106,60 @@ auto mymax(T& a, T& b, Rest&...args){
 //-----------------------------------------------------------------------------
 
 
-/**
- *  The explaination to this is a bit weird for me, see: 
- *  https://people.engr.tamu.edu/andreas-klappenecker/csce411-f11/csce411-set8.pdf
+/*
+ * The recursive solution is very similar to prev sum questions with the sole 
+ * restriction of having to avoid double counting.
  *
- *  What we basically do is the following: given 2 seq X and Y, and an LCS Z
- *  then given X_k being the seq from X[0:k] inclusive, then Z_k must
- *  include either X_k or Y_k or both. 
+ * The dp is also similar, we keep a vector of the max num of pages we can achieve 
+ * at each price point. To avoid double counting we replicate the coin2 questions 
+ * aproach by looping through the books first, in for each we go through the levels.
  *
- *  if X[k] == Y[k] then we know that Z_k = Z_(k-1) + 1 since we are adding to it
- *
- *  The hard to see part is when they are not equal, in this case we have 2 choices
- *  the longest seq is either in X_k and Y_(k-1) OR X_(k-1) and Y_k. Both cant be
- *  at k since they are not equal at that element.
- *
- *  an m*n dp is used to save the Z for every X_i Y_j pair
- *
- *
- *  re-building the sol is my work. observe that if all 3 prev states are less than
- *  dp[i][j] then it must be that we added a new element, that gives us the e to add.
- *  which must be a[i] == b[j] so we assert.
- *
- *  if dp[i][j] is not > than the left, right and top-left then no e was added,
- *  so we just move to that state.
+ * A slight diff is that in coin 2 we wanted to count say the num 2 more than once
+ * but here we dont, so when looping we start from the end.
  */
 
+auto T(vl& cost, vl& page, ll x) -> ll{
+  if(x==0) return 0;
+
+  ll res = 0;
+  for(ll i=0; i<cost.size(); ++i){
+    if(cost[i]>x) continue;
+    ll c=cost[i];
+    cost[i] = INF; // to avoid double buying
+    res = max(res, page[i] + T(cost, page, x-c));
+    cost[i] = c;
+  }
+  return res;
+}
 
 
 int main(){
-  ll n, m;
-  cin >> n >> m;
+  ll n, x;
+  cin >> n >> x;
 
-  vl a{}, b{};
-  for(auto _: srv::iota(0, n)){
-    ll val; cin >> val;
-    a.push_back(val); 
+  vl cost{}; cost.reserve(n);
+  vl page{}; page.reserve(n);
+
+  for(auto _ : srv::iota(0, n)){
+    ll c; cin >> c;
+    cost.push_back(c);
   }
-  for(auto _: srv::iota(0, m)){
-    ll val; cin >> val;
-    b.push_back(val); 
+  for(auto _ : srv::iota(0, n)){
+    ll p; cin >> p;
+    page.push_back(p);
   }
-
-
-  // accounting for the empty subarray
-  vvl dp(n+1, vl(m+1, 0));
-
-  for(ll i=1; i<n+1; ++i){
-    for(ll j=1; j<m+1; ++j){
-      if(a[i-1] == b[j-1]){
-        dp[i][j] = dp[i-1][j-1]+1;
-      }
-      else{
-        dp[i][j] = max(dp[i][j-1], dp[i-1][j]);
-      }
+  
+  //cout << T(cost, page, x);
+  
+  vl dp(x+1, 0);
+  for(ll book=0; book<cost.size(); ++book){
+    for(ll i=dp.size()-1; i>=0; --i){
+      if(cost[book]>i) continue;
+      dp[i] = max(dp[i], page[book] + dp[i-cost[book]]);
     }
   }
 
-  // reconstructing result
-  ll y = n;
-  ll x = m;
-  vl res{};
-  while(y>0 && x>0 && dp[y][x] > 0){
-    ll max_elem = mymax(dp[y-1][x-1], dp[y-1][x], dp[y][x-1]); 
-    if(dp[y][x] > max_elem){
-      assert(a[y-1] == b[x-1]);
-      res.push_back(a[y-1]);
-    }
-    if(dp[y-1][x-1] == max_elem){
-      --y; --x;
-    }else if(dp[y-1][x] == max_elem){
-      --y;
-    }else{
-      --x;
-    }
-  }
+  cout << dp.back();
 
 
-  cout << dp[n][m] << "\n";
-  reverse(res.begin(), res.end());
-  print_vec(res);
 }

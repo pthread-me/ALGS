@@ -2,6 +2,8 @@
 
 using namespace std;
 
+
+
 using ll =  long long;
 using ull =  unsigned long long;
 using vs = vector<string>;
@@ -14,7 +16,7 @@ namespace srv = ranges::views;
 namespace sr = ranges;
 namespace sv = views;
 
-static const ll INF = numeric_limits<ll>::max() - 100^000; // offset possible addition issues
+static const ll INF = numeric_limits<ll>::max() - 10000; // offset possible addition issues
 static const ll NINF = numeric_limits<ll>::min();
 
 inline auto ltrim(string_view s) -> string_view {
@@ -81,9 +83,11 @@ auto read_line() -> vector<T> {
 
 template<printable T>
 auto print_vec(vector<T>& v) -> void{
-  for(auto& e: v){
-    cout << e << " ";
+  cout << *v.begin();
+  for(auto it = next(v.begin()); it!=v.end(); ++it){
+    cout << " " << *it;
   }
+  cout << "\n";
 }
 
 template<number T>
@@ -95,25 +99,6 @@ constexpr auto mypow(T a, T b) -> T {
   return res;
 }
 
-template<number T, typename ...Rest>
-auto mymin(T& a, T& b, Rest&...args){
-  T res = min(a, b);
-  for(auto p: {args...}){
-    res = min(res, p); 
-  }
-  return res;
-}
-
-
-template<number T, typename ...Rest>
-auto mymax(T& a, T& b, Rest&...args){
-  T res = max(a, b);
-  for(auto p: {args...}){
-    res = max(res, p); 
-  }
-  return res;
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // SOLUTIONS BELLOW
@@ -121,83 +106,61 @@ auto mymax(T& a, T& b, Rest&...args){
 //-----------------------------------------------------------------------------
 
 
-/**
- *  The explaination to this is a bit weird for me, see: 
- *  https://people.engr.tamu.edu/andreas-klappenecker/csce411-f11/csce411-set8.pdf
+/*
+ *  This vid describes the sol perfectly, I understand but cant draw here
+ *  https://www.youtube.com/watch?v=PLpzng35N54
  *
- *  What we basically do is the following: given 2 seq X and Y, and an LCS Z
- *  then given X_k being the seq from X[0:k] inclusive, then Z_k must
- *  include either X_k or Y_k or both. 
+ *  My explaination is the following:
+ *    we divide the list of numbers into levels, so nums[0] is L1
+ *  The length of each level is m, since thats our domain.
+ *  
+ *  starting at some position dp[L][i] we can only choose elements in the range
+ *    i-1 <= i <= i+1. so the number of ways to get to dp[L][i] is the number
+ *    of ways to reach it (or be reached to it) summed.
  *
- *  if X[k] == Y[k] then we know that Z_k = Z_(k-1) + 1 since we are adding to it
+ *  If nums[L] != 0 we only consider the ith element equal to nums[L].
  *
- *  The hard to see part is when they are not equal, in this case we have 2 choices
- *  the longest seq is either in X_k and Y_(k-1) OR X_(k-1) and Y_k. Both cant be
- *  at k since they are not equal at that element.
+ *  In my solution im offseting i by i-1 since arrays are 0 based. but its the same
  *
- *  an m*n dp is used to save the Z for every X_i Y_j pair
- *
- *
- *  re-building the sol is my work. observe that if all 3 prev states are less than
- *  dp[i][j] then it must be that we added a new element, that gives us the e to add.
- *  which must be a[i] == b[j] so we assert.
- *
- *  if dp[i][j] is not > than the left, right and top-left then no e was added,
- *  so we just move to that state.
  */
 
-
+const ll mod = (1000'000'007);
 
 int main(){
   ll n, m;
   cin >> n >> m;
-
-  vl a{}, b{};
+  vl nums{};
   for(auto _: srv::iota(0, n)){
-    ll val; cin >> val;
-    a.push_back(val); 
-  }
-  for(auto _: srv::iota(0, m)){
-    ll val; cin >> val;
-    b.push_back(val); 
+    ll c; cin >> c;
+    nums.push_back(c);
   }
 
+  vvl dp(n, vl(m, 0));
+  if(nums[0] != 0){
+    dp[0][nums[0]-1] = 1;
+  }else{
+    for(ll i=0; i<m; ++i) dp[0][i] = 1;
+  }
 
-  // accounting for the empty subarray
-  vvl dp(n+1, vl(m+1, 0));
+  for(ll l=1; l<n; ++l){
+    for(ll i=0; i<m; ++i){
+      if(nums[l] != 0 && i+1 != nums[l]) continue;
 
-  for(ll i=1; i<n+1; ++i){
-    for(ll j=1; j<m+1; ++j){
-      if(a[i-1] == b[j-1]){
-        dp[i][j] = dp[i-1][j-1]+1;
-      }
-      else{
-        dp[i][j] = max(dp[i][j-1], dp[i-1][j]);
-      }
+      if(i-1>=0) dp[l][i] = (dp[l-1][i-1] + dp[l][i]) % mod; 
+      if(i+1<m) dp[l][i] = (dp[l-1][i+1] + dp[l][i]) % mod; 
+      dp[l][i] = (dp[l-1][i] + dp[l][i]) % mod;
     }
   }
 
-  // reconstructing result
-  ll y = n;
-  ll x = m;
-  vl res{};
-  while(y>0 && x>0 && dp[y][x] > 0){
-    ll max_elem = mymax(dp[y-1][x-1], dp[y-1][x], dp[y][x-1]); 
-    if(dp[y][x] > max_elem){
-      assert(a[y-1] == b[x-1]);
-      res.push_back(a[y-1]);
-    }
-    if(dp[y-1][x-1] == max_elem){
-      --y; --x;
-    }else if(dp[y-1][x] == max_elem){
-      --y;
-    }else{
-      --x;
-    }
+   
+  // custom accumulation :)
+  if(nums.back() == 0){
+    cout << accumulate(dp.back().begin(), dp.back().end(), 0, [](ll a, ll b)->ll{
+      return (a+b)% mod;
+    });
+  }else{
+    cout << dp.back()[nums.back() - 1];
   }
 
 
-  cout << dp[n][m] << "\n";
-  reverse(res.begin(), res.end());
-  print_vec(res);
 }

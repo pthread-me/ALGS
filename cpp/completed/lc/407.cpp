@@ -81,9 +81,11 @@ auto read_line() -> vector<T> {
 
 template<printable T>
 auto print_vec(vector<T>& v) -> void{
-  for(auto& e: v){
-    cout << e << " ";
+  cout << *v.begin();
+  for(auto it = next(v.begin()); it!=v.end(); ++it){
+    cout << " " << *it;
   }
+  cout << "\n";
 }
 
 template<number T>
@@ -95,109 +97,62 @@ constexpr auto mypow(T a, T b) -> T {
   return res;
 }
 
-template<number T, typename ...Rest>
-auto mymin(T& a, T& b, Rest&...args){
-  T res = min(a, b);
-  for(auto p: {args...}){
-    res = min(res, p); 
-  }
-  return res;
-}
-
-
-template<number T, typename ...Rest>
-auto mymax(T& a, T& b, Rest&...args){
-  T res = max(a, b);
-  for(auto p: {args...}){
-    res = max(res, p); 
-  }
-  return res;
-}
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // SOLUTIONS BELLOW
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+class Solution {
+public:
+  int trapRainWater(vector<vector<int>>& h) {
+    const vector<array<int, 2>> dir{{0,-1}, {0,1}, {-1,0}, {1,0}};
 
-/**
- *  The explaination to this is a bit weird for me, see: 
- *  https://people.engr.tamu.edu/andreas-klappenecker/csce411-f11/csce411-set8.pdf
- *
- *  What we basically do is the following: given 2 seq X and Y, and an LCS Z
- *  then given X_k being the seq from X[0:k] inclusive, then Z_k must
- *  include either X_k or Y_k or both. 
- *
- *  if X[k] == Y[k] then we know that Z_k = Z_(k-1) + 1 since we are adding to it
- *
- *  The hard to see part is when they are not equal, in this case we have 2 choices
- *  the longest seq is either in X_k and Y_(k-1) OR X_(k-1) and Y_k. Both cant be
- *  at k since they are not equal at that element.
- *
- *  an m*n dp is used to save the Z for every X_i Y_j pair
- *
- *
- *  re-building the sol is my work. observe that if all 3 prev states are less than
- *  dp[i][j] then it must be that we added a new element, that gives us the e to add.
- *  which must be a[i] == b[j] so we assert.
- *
- *  if dp[i][j] is not > than the left, right and top-left then no e was added,
- *  so we just move to that state.
- */
+    const int n = h.size();
+    const int m = h[0].size();
 
+    using point = tuple<int, int, int>;
+    auto compare = [](point& a, point& b)-> bool {
+      return get<2>(a) > get<2>(b); 
+    };
+    priority_queue<point, deque<point>, decltype(compare)> q(compare);
+
+    // adding the boundary points
+    for(int i=0; i<n; ++i){
+      for(int j=0; j<m; ++j){
+        if(i==0 || j==0 || i==n-1 || j==m-1){
+          q.push(point(i, j, h[i][j]));
+          h[i][j] = -1;
+        }
+      }
+    }
+    
+    int res = 0;
+    int level = 0;
+    while(!q.empty()){
+      point cur = q.top(); q.pop();
+      int i = get<0>(cur);
+      int j = get<1>(cur);
+      int height = get<2>(cur);
+      level  = max(level, height);
+
+      for(auto& [y, x]: dir){
+        if(i+y<0 || i+y>=n || j+x<0 || j+x>=m || h[i+y][j+x] < 0) continue;
+        q.push(point(i+y, j+x, h[i+y][j+x]));
+        if(level > h[i+y][j+x]){
+          res += (level - h[i+y][j+x]);
+        }
+        h[i+y][j+x] = -1;
+      }
+    }
+
+    return res;
+  }
+};
 
 
 int main(){
-  ll n, m;
-  cin >> n >> m;
-
-  vl a{}, b{};
-  for(auto _: srv::iota(0, n)){
-    ll val; cin >> val;
-    a.push_back(val); 
-  }
-  for(auto _: srv::iota(0, m)){
-    ll val; cin >> val;
-    b.push_back(val); 
-  }
-
-
-  // accounting for the empty subarray
-  vvl dp(n+1, vl(m+1, 0));
-
-  for(ll i=1; i<n+1; ++i){
-    for(ll j=1; j<m+1; ++j){
-      if(a[i-1] == b[j-1]){
-        dp[i][j] = dp[i-1][j-1]+1;
-      }
-      else{
-        dp[i][j] = max(dp[i][j-1], dp[i-1][j]);
-      }
-    }
-  }
-
-  // reconstructing result
-  ll y = n;
-  ll x = m;
-  vl res{};
-  while(y>0 && x>0 && dp[y][x] > 0){
-    ll max_elem = mymax(dp[y-1][x-1], dp[y-1][x], dp[y][x-1]); 
-    if(dp[y][x] > max_elem){
-      assert(a[y-1] == b[x-1]);
-      res.push_back(a[y-1]);
-    }
-    if(dp[y-1][x-1] == max_elem){
-      --y; --x;
-    }else if(dp[y-1][x] == max_elem){
-      --y;
-    }else{
-      --x;
-    }
-  }
-
-
-  cout << dp[n][m] << "\n";
-  reverse(res.begin(), res.end());
-  print_vec(res);
+  Solution s{};
+  vector<vector<int>> height = {{78,16,94,36},{87,93,50,22},{63,28,91,60},{64,27,41,27},{73,37,12,69},{68,30,83,31},{63,24,68,36}};
+  cout << s.trapRainWater(height);
 }
