@@ -130,6 +130,19 @@ auto mylcm(T a, T b) -> T{
 ////-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 
+/**
+ * I switched the relation from a->b meaning a before b to b->a so b after a, this was my adjacency list. once you have that you can do a post order traversal and it visits your children first (which is what you want).
+
+while reading the input: a b I have b->a and p[a]=b
+Then any element p[i]=i is a root, what this means is: root elements have no "x after y" relation so they can be in any order among themselves so it doesn't matter which root node we start traversing from, pick any root and do post traversal. I also keep a visited table to avoid double counting vertices when traversing.
+
+for example the input "a b" and "a c" gives the relations  b->a and c->a we can start from b this gives [a,b] then starting from c gives [a,b,c]
+
+Before doing the traversal I do a cycle check run via dfs just like in the  "round_trip II" question if a cycle is found the its impossible.
+
+
+ */
+
 // cycle check
 auto dfs(vvl& adj, vl& status, ll u) -> bool{
   status[u] = 1;
